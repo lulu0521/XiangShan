@@ -69,7 +69,7 @@ class LoadQueueRAW(implicit p: Parameters) extends XSModule
   ))
   paddrModule.io := DontCare
   val maskModule = Module(new LqMaskModule(
-    gen = UInt(8.W),
+    gen = UInt((VLEN/8).W),
     numEntries = LoadQueueRAWSize, 
     numRead = LoadPipelineWidth, 
     numWrite = LoadPipelineWidth,
@@ -129,7 +129,7 @@ class LoadQueueRAW(implicit p: Parameters) extends XSModule
     val schedError = VecInit((0 until StorePipelineWidth).map(i => 
       io.storeIn(i).valid &&
       isAfter(lastEnqBits.uop.robIdx, io.storeIn(i).bits.uop.robIdx) &&
-      (lastEnqBits.paddr(PAddrBits-1,3) === io.storeIn(i).bits.paddr(PAddrBits-1, 3)) &&
+      (lastEnqBits.paddr(PAddrBits-1,4) === io.storeIn(i).bits.paddr(PAddrBits-1, 4)) &&
       (lastEnqBits.mask & io.storeIn(i).bits.mask).orR)).asUInt.orR
     
     when (lastEnqValid) {

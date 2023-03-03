@@ -102,7 +102,7 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
     val s0_kill = Input(Bool())
     // wire from lq to load pipeline
     val replay = Flipped(Decoupled(new LsPipelineBundle))
-
+    //val lsqOut = Flipped(Decoupled(new LsPipelineBundle))
     val s0_sqIdx = Output(new SqPtr)
     // l2l
     val l2lForward_select = Output(Bool())
@@ -250,7 +250,7 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // load flow priority mux
   when(lfsrc_loadReplay_select) {
     s0_vaddr := io.replay.bits.vaddr
-    s0_mask := genWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuType(1, 0))
+    s0_mask := genVWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuType(1, 0))
     s0_uop := io.replay.bits.uop
     s0_isFirstIssue := io.replay.bits.isFirstIssue
     s0_sqIdx := io.replay.bits.uop.sqIdx
@@ -348,7 +348,7 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // load flow source ready
   // always accept load flow from load replay queue
   // io.lsqOut has highest priority
-  io.lsqOut.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_loadReplay_ready)
+  //io.lsqOut.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_loadReplay_ready)
 
   // accept load flow from rs when:
   // 1) there is no lsq-replayed load
@@ -446,15 +446,13 @@ class LoadUnit_S1(implicit p: Parameters) extends XSModule with HasCircularQueue
   // st-ld violation query
   val s1_schedError =  VecInit((0 until StorePipelineWidth).map(w => io.reExecuteQuery(w).valid &&
                           isAfter(io.in.bits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) && 
-                          (s1_paddr_dup_lsu(PAddrBits-1, 3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+                          (s1_paddr_dup_lsu(PAddrBits-1, 4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
                           (s1_mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR && !s1_tlb_miss
   //  mdp read
   io.correctTableQueryReq.addr := io.in.bits.uop.cf.foldpc
 
   // Generate forwardMaskFast to wake up insts earlier
   val forwardMaskFast = io.lsq.forwardMaskFast.asUInt | io.sbuffer.forwardMaskFast.asUInt
-  //val forwardMaskFast = Mux(io.in.bits.vaddr(3),io.lsq.forwardMaskFast.asUInt>>8 | io.sbuffer.forwardMaskFast.asUInt>>8,
-  //  io.lsq.forwardMaskFast.asUInt | io.sbuffer.forwardMaskFast.asUInt)
   io.fullForwardFast := ((~forwardMaskFast).asUInt & s1_mask) === 0.U
 
   io.out.valid := io.in.valid && !io.s1_kill
@@ -603,7 +601,7 @@ class LoadUnit_S2(implicit p: Parameters) extends XSModule
   //  4. Data contains.
   val s2_schedError = VecInit((0 until StorePipelineWidth).map(w => io.reExecuteQuery(w).valid &&
                               isAfter(io.in.bits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) &&
-                              (s2_paddr(PAddrBits-1,3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+                              (s2_paddr(PAddrBits-1,4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
                               (s2_mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR &&
                               !s2_tlb_miss 
 
@@ -649,25 +647,12 @@ class LoadUnit_S2(implicit p: Parameters) extends XSModule
     forwardMask(i) := io.lsq.forwardMask(i) || io.sbuffer.forwardMask(i)
     forwardData(i) := Mux(io.lsq.forwardMask(i), io.lsq.forwardData(i), io.sbuffer.forwardData(i))
   }
-  //val LoadforwardMaskH = VecInit((0 until 8).map(i=>forwardMask(i+8)))
-  //val LoadforwardMaskL = VecInit((0 until 8).map(i=>forwardMask(i)))
-  //val LoadforwardMask = Mux(s2_paddr(3),LoadforwardMaskH,LoadforwardMaskL)
-  //val LoadforwardDataH = VecInit((0 until 8).map(i=>forwardData(i+8)))
-  //val LoadforwardDataL = VecInit((0 until 8).map(i=>forwardData(i)))
-  //val LoadforwardData = Mux(s2_paddr(3),LoadforwardDataH,LoadforwardDataL)
 
-  //val fullForward = ((~LoadforwardMask.asUInt).asUInt & s2_mask) === 0.U && !io.lsq.dataInvalid
   val fullForward = ((~forwardMask.asUInt).asUInt & s2_mask) === 0.U && !io.lsq.dataInvalid
   io.lsq := DontCare
   io.sbuffer := DontCare
   io.fullForward := fullForward
 
-  //val lsqForwardMaskH = VecInit((0 until 8).map(i=>io.lsq.forwardMask(i+8)))
-  //val lsqForwardMaskL = VecInit((0 until 8).map(i=>io.lsq.forwardMask(i)))
-  //val lsqForwardMask = Mux(s2_paddr(3),lsqForwardMaskH,lsqForwardMaskL)
-  //val lsqForwardDatdH = VecInit((0 until 8).map(i=>io.lsq.forwardData(i+8)))
-  //val lsqForwardDatdL = VecInit((0 until 8).map(i=>io.lsq.forwardData(i)))
-  //val lsqForwardData = Mux(s2_paddr(3),lsqForwardDatdH,lsqForwardDatdL)
   XSDebug(io.out.fire, "[FWD LOAD RESP] pc %x fwd %x(%b) + %x(%b)\n",
     s2_uop.cf.pc,
     io.lsq.forwardData.asUInt, io.lsq.forwardMask.asUInt,
@@ -732,8 +717,6 @@ class LoadUnit_S2(implicit p: Parameters) extends XSModule
 
   io.loadDataFromDcache.forwardMask := RegEnable(forwardMask, io.in.valid)
   io.loadDataFromDcache.forwardData := RegEnable(forwardData, io.in.valid)
-  //io.loadDataFromDcache.forwardMask := RegEnable(LoadforwardMask, io.in.valid)
-  //io.loadDataFromDcache.forwardData := RegEnable(LoadforwardData, io.in.valid)
   io.loadDataFromDcache.uop := RegEnable(io.out.bits.uop, io.in.valid)
   io.loadDataFromDcache.addrOffset := RegEnable(s2_paddr(3, 0), io.in.valid)
   // forward D or mshr
@@ -1130,7 +1113,7 @@ class LoadUnit(implicit p: Parameters) extends XSModule
     //  4. Data contains.
     io.reExecuteQuery(w).valid &&
     isAfter(s3_loadOutBits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) &&
-    (s3_loadOutBits.paddr(PAddrBits-1,3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+    (s3_loadOutBits.paddr(PAddrBits-1,4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
     (s3_loadOutBits.mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR && !s3_loadOutBits.tlbMiss
 
   // write to rob and writeback bus

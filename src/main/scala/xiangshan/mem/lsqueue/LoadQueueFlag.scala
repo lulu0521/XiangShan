@@ -79,7 +79,7 @@ class LoadQueueFlag(implicit p: Parameters) extends XSModule
     numCamPort = 0))
   paddrModule.io := DontCare
   val maskModule = Module(new LqMaskModule(
-    gen = UInt(8.W), 
+    gen = UInt(8.W),
     numEntries = LoadQueueFlagSize, 
     numRead = 1, 
     numWrite = LoadPipelineWidth, 
@@ -187,7 +187,7 @@ class LoadQueueFlag(implicit p: Parameters) extends XSModule
     issPtrExtNext := issPtrExt + lastIssCount
   }
   issPtrExt := RegEnable(next = issPtrExtNext, init = 0.U.asTypeOf(new LqPtr), enable = issPtrExtEna)
-  io.ldIssuePtr := issPtrExt
+  io.ldIssuePtr := deqPtrExt//issPtrExt
 
   /**
    * Enqueue at dispatch
@@ -318,7 +318,7 @@ class LoadQueueFlag(implicit p: Parameters) extends XSModule
 
       maskModule.io.wen(i) := true.B 
       maskModule.io.waddr(i) := loadWbIndex
-      maskModule.io.wdata(i) := io.loadIn(i).bits.mask
+      maskModule.io.wdata(i) := Mux( io.loadIn(i).bits.paddr(3),io.loadIn(i).bits.mask(15,8),io.loadIn(i).bits.mask(7,0))
 
       //  Debug info
       debug_mmio(loadWbIndex) := io.loadIn(i).bits.mmio 
@@ -413,6 +413,7 @@ class LoadQueueFlag(implicit p: Parameters) extends XSModule
   io.uncache.req.bits.cmd := MemoryOpConstants.M_XRD
   io.uncache.req.bits.data := DontCare
   io.uncache.req.bits.addr := paddrModule.io.rdata(0)
+  //io.uncache.req.bits.mask := Mux(paddrModule.io.rdata(0)(3),maskModule.io.rdata(0)>>8,maskModule.io.rdata(0))
   io.uncache.req.bits.mask := maskModule.io.rdata(0)
   io.uncache.req.bits.id := RegNext(deqPtrExtNext.value)
   io.uncache.req.bits.instrtype := DontCare

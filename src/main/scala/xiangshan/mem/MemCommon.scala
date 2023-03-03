@@ -258,7 +258,7 @@ class LoadViolationQueryReq(implicit p: Parameters) extends XSBundleWithMicroOp 
   val allocated = Bool()
   val datavalid = Bool()
   val miss = Bool()
-  val mask = UInt(8.W)
+  val mask = UInt((VLEN/8).W)
   val paddr = UInt(PAddrBits.W)
 }
 
