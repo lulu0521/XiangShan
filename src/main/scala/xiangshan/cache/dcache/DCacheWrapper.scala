@@ -141,13 +141,13 @@ trait HasDCacheParameters extends HasL1CacheParameters {
 
   val DCacheSameVPAddrLength = 12
 
-  val DCacheSRAMRowBytes = DCacheSRAMRowBits / 8  //8
+  val DCacheSRAMRowBytes = DCacheSRAMRowBits / 8
   val DCacheWordOffset = log2Up(DCacheWordBytes)
-  val DCacheVWordOffset = log2Up(DCacheVWordBytes)  //4
+  val DCacheVWordOffset = log2Up(DCacheVWordBytes)
 
-  val DCacheBankOffset = log2Up(DCacheSRAMRowBytes) //3
-  val DCacheSetOffset = DCacheBankOffset + log2Up(DCacheBanks)  //6
-  val DCacheAboveIndexOffset = DCacheSetOffset + log2Up(DCacheSets)//6+8
+  val DCacheBankOffset = log2Up(DCacheSRAMRowBytes)
+  val DCacheSetOffset = DCacheBankOffset + log2Up(DCacheBanks)
+  val DCacheAboveIndexOffset = DCacheSetOffset + log2Up(DCacheSets)
   val DCacheTagOffset = DCacheAboveIndexOffset min DCacheSameVPAddrLength
   val DCacheLineOffset = DCacheSetOffset
 

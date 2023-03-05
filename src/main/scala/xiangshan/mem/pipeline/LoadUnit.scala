@@ -250,7 +250,7 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // load flow priority mux
   when(lfsrc_loadReplay_select) {
     s0_vaddr := io.replay.bits.vaddr
-    s0_mask := genVWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuType(1, 0))
+    s0_mask := genVWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuOpType(1, 0))
     s0_uop := io.replay.bits.uop
     s0_isFirstIssue := io.replay.bits.isFirstIssue
     s0_sqIdx := io.replay.bits.uop.sqIdx
@@ -353,7 +353,6 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // accept load flow from rs when:
   // 1) there is no lsq-replayed load
   // 2) there is no high confidence prefetch request
-  io.in.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_intloadFirstIssue_select)
 
   // for hw prefetch load flow feedback, to be added later
   // io.prefetch_in.ready := lfsrc_hwprefetch_select

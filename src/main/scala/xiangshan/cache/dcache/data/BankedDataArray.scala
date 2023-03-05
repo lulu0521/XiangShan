@@ -288,19 +288,15 @@ class BankedDataArray(implicit p: Parameters) extends AbstractBankedDataArray {
   // read conflict
   val rr_bank_conflict = Seq.tabulate(LoadPipelineWidth)(x => Seq.tabulate(LoadPipelineWidth)(y => //TODO:when have is128Req
     (io.read(x).bits.bankMask & io.read(y).bits.bankMask) =/= 0.U && io.read(x).valid && io.read(y).valid && io.read(x).bits.way_en === io.read(y).bits.way_en && set_addrs(x) =/= set_addrs(y)))
-  //val rr_bank_conflict = Seq.tabulate(LoadPipelineWidth)(x => Seq.tabulate(LoadPipelineWidth)(y =>
-  //  bank_addrs(x) === bank_addrs(y) && io.read(x).valid && io.read(y).valid && io.read(x).bits.way_en === io.read(y).bits.way_en && set_addrs(x) =/= set_addrs(y)
-  //))
+
   val rrl_bank_conflict = Wire(Vec(LoadPipelineWidth, Bool()))
   if (ReduceReadlineConflict) {
-    //(0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict(i) := io.read(i).valid && io.readline.valid && io.readline.bits.rmask(bank_addrs(i)))
     (0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict(i) := io.read(i).valid && io.readline.valid && (io.readline.bits.rmask & io.read(i).bits.bankMask) =/= 0.U)//TODO:when have is128Req
   } else {
     (0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict(i) := io.read(i).valid && io.readline.valid && io.readline.bits.way_en === way_en(i) && addr_to_dcache_set(io.readline.bits.addr)=/=set_addrs(i))
   }
   val rrl_bank_conflict_intend = Wire(Vec(LoadPipelineWidth, Bool()))
   if (ReduceReadlineConflict) {
-    //(0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict_intend(i) := io.read(i).valid && io.readline_intend && io.readline.bits.rmask(bank_addrs(i)))
     (0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict_intend(i) := io.read(i).valid && io.readline_intend && (io.readline.bits.rmask & io.read(i).bits.bankMask) =/= 0.U) //TODO:when have is128Req
   } else {
     (0 until LoadPipelineWidth).foreach(i => rrl_bank_conflict_intend(i) := io.read(i).valid && io.readline_intend && io.readline.bits.way_en === way_en(i) && addr_to_dcache_set(io.readline.bits.addr)=/=set_addrs(i))
@@ -350,9 +346,6 @@ class BankedDataArray(implicit p: Parameters) extends AbstractBankedDataArray {
       val loadpipe_en = WireInit(VecInit(List.tabulate(LoadPipelineWidth)(i => {//TODO:when have is128Req
         (bank_addrs(i)(0) === bank_index.U || bank_addrs(i)(1) === bank_index.U) && io.read(i).valid && way_en(i)(way_index)
       })))
-      //val loadpipe_en = WireInit(VecInit(List.tabulate(LoadPipelineWidth)(i => {
-      //  bank_addrs(i) === bank_index.U && io.read(i).valid && way_en(i)(way_index)
-      //})))
       val readline_en = Wire(Bool())
       if (ReduceReadlineConflict) {
         readline_en := io.readline.valid && io.readline.bits.rmask(bank_index) && io.readline.bits.way_en(way_index)

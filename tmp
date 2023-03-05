@@ -1,0 +1,6 @@
+CACHE_ERROR CSR reported an error:
+  paddr 0x080000f00
+  report to bus error unit
+  data
+  load
+It should not happen in normal execution flow
