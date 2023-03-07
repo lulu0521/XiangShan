@@ -292,7 +292,7 @@ class LoadQueueFlag(implicit p: Parameters) extends XSModule
 
         maskModule.io.wen(i) := true.B 
         maskModule.io.waddr(i) := loadWbIndex
-        maskModule.io.wdata(i) := io.loadIn(i).bits.mask
+        maskModule.io.wdata(i) := Mux( io.loadIn(i).bits.paddr(3),io.loadIn(i).bits.mask(15,8),io.loadIn(i).bits.mask(7,0))
 
         //  Debug info
         debug_mmio(loadWbIndex) := io.loadIn(i).bits.mmio 

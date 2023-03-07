@@ -250,7 +250,7 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // load flow priority mux
   when(lfsrc_loadReplay_select) {
     s0_vaddr := io.replay.bits.vaddr
-    s0_mask := genWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuType(1, 0))
+    s0_mask := genVWmask(io.replay.bits.vaddr, io.replay.bits.uop.ctrl.fuOpType(1, 0))
     s0_uop := io.replay.bits.uop
     s0_isFirstIssue := io.replay.bits.isFirstIssue
     s0_sqIdx := io.replay.bits.uop.sqIdx
@@ -348,12 +348,12 @@ class LoadUnit_S0(implicit p: Parameters) extends XSModule with HasDCacheParamet
   // load flow source ready
   // always accept load flow from load replay queue
   // io.lsqOut has highest priority
-  io.lsqOut.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_loadReplay_ready)
+  //io.lsqOut.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_loadReplay_ready)
 
   // accept load flow from rs when:
   // 1) there is no lsq-replayed load
   // 2) there is no high confidence prefetch request
-  io.in.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_intloadFirstIssue_select)
+  //io.in.ready := (io.out.ready && io.dcacheReq.ready && lfsrc_intloadFirstIssue_select)
 
   // for hw prefetch load flow feedback, to be added later
   // io.prefetch_in.ready := lfsrc_hwprefetch_select
@@ -446,7 +446,7 @@ class LoadUnit_S1(implicit p: Parameters) extends XSModule with HasCircularQueue
   // st-ld violation query
   val s1_schedError =  VecInit((0 until StorePipelineWidth).map(w => io.reExecuteQuery(w).valid &&
                           isAfter(io.in.bits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) && 
-                          (s1_paddr_dup_lsu(PAddrBits-1, 3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+                          (s1_paddr_dup_lsu(PAddrBits-1, 4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
                           (s1_mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR && !s1_tlb_miss
   //  mdp read
   io.correctTableQueryReq.addr := io.in.bits.uop.cf.foldpc
@@ -603,7 +603,7 @@ class LoadUnit_S2(implicit p: Parameters) extends XSModule
   //  4. Data contains.
   val s2_schedError = VecInit((0 until StorePipelineWidth).map(w => io.reExecuteQuery(w).valid &&
                               isAfter(io.in.bits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) &&
-                              (s2_paddr(PAddrBits-1,3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+                              (s2_paddr(PAddrBits-1,4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
                               (s2_mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR &&
                               !s2_tlb_miss 
 
@@ -1130,7 +1130,7 @@ class LoadUnit(implicit p: Parameters) extends XSModule
     //  4. Data contains.
     io.reExecuteQuery(w).valid &&
     isAfter(s3_loadOutBits.uop.robIdx, io.reExecuteQuery(w).bits.robIdx) &&
-    (s3_loadOutBits.paddr(PAddrBits-1,3) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 3)) &&
+    (s3_loadOutBits.paddr(PAddrBits-1,4) === io.reExecuteQuery(w).bits.paddr(PAddrBits-1, 4)) &&
     (s3_loadOutBits.mask & io.reExecuteQuery(w).bits.mask).orR)).asUInt.orR && !s3_loadOutBits.tlbMiss
 
   // write to rob and writeback bus
